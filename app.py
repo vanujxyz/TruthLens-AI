@@ -1,7 +1,9 @@
 import cv2
 import keras
 import numpy as np
-from tensorflow.keras.applications.xception import Xception, preprocess_input
+import traceback  # For error debugging
+from tensorflow.keras.applications import EfficientNetB0
+from tensorflow.keras.applications.efficientnet import preprocess_input
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.models import Model
@@ -10,79 +12,103 @@ from flask import Flask, request, jsonify
 # Initialize Flask app
 app = Flask(__name__)
 
-# Load the pre-trained Xception model (exclude top layers)
-base_model = Xception(weights='imagenet', include_top=False, pooling='avg')
+try:
+    print("🔄 Loading EfficientNetB0 model...")
+    base_model = EfficientNetB0(weights="imagenet", include_top=False, pooling='avg')
 
-# Add custom top layer for binary classification (fake vs. real)
-x = base_model.output
-x = Dense(1, activation='sigmoid')(x)  # Binary classification (fake or real)
-model = Model(inputs=base_model.input, outputs=x)
+    # Add custom top layer for binary classification (fake vs. real)
+    x = base_model.output
+    x = Dense(1, activation='sigmoid')(x)  # Binary classification
+    model = Model(inputs=base_model.input, outputs=x)
 
-# Compile the model (you can modify the optimizer and loss function if needed)
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    # Compile the model
+    model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    print("✅ Model Loaded Successfully!")
+except Exception as e:
+    print("❌ ERROR: Model failed to load!")
+    print(traceback.format_exc())
+
 
 # Function to preprocess the image before passing to the model
 def preprocess_image(img_path):
-    # Load the image using OpenCV
-    img = cv2.imread(img_path)
-    
-    # Resize the image to 299x299 (required by Xception)
-    img_resized = cv2.resize(img, (299, 299))
-    
-    # Convert the image from BGR (OpenCV) to RGB (required for Xception)
-    img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
-    
-    # Convert image to array
-    img_array = image.img_to_array(img_rgb)
-    
-    # Add batch dimension (for model input) and preprocess image
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)
-    
-    return img_array
+    try:
+        print(f"📷 Loading image from {img_path}")
+        img = cv2.imread(img_path)
 
-# Function to detect if the image is fake or real using the Xception model
+        if img is None:
+            print("❌ ERROR: Failed to load image!")
+            return None
+
+        img_resized = cv2.resize(img, (224, 224))  # EfficientNet requires 224x224
+        img_rgb = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
+        img_array = image.img_to_array(img_rgb)
+        img_array = np.expand_dims(img_array, axis=0)
+        img_array = preprocess_input(img_array)
+
+        return img_array
+    except Exception as e:
+        print("❌ ERROR in image preprocessing!")
+        print(traceback.format_exc())
+        return None
+
+
+# Function to detect if the image is fake or real using the EfficientNetB0 model
 def detect_fake_image(image_path):
-    # Preprocess the image
-    img_array = preprocess_image(image_path)
+    try:
+        img_array = preprocess_image(image_path)
+        if img_array is None:
+            return {"error": "Invalid image format"}
 
-    # Make predictions using the pre-loaded model
-    predictions = model.predict(img_array)
+        print("🤖 Making prediction...")
+        predictions = model.predict(img_array)
+        confidence = float(predictions[0][0])  # Convert to Python float
 
-    # Define threshold for fake detection (you can adjust based on your model's behavior)
-    fake_threshold = 0.5
+        print(f"📊 Prediction Output: {confidence}")
 
-    # Ensure predictions is a scalar value (binary classification output)
-    if predictions.shape == (1, 1):  # If the prediction is a scalar (binary classification)
-        result = "Fake Image" if predictions[0][0] < fake_threshold else "Real Image"
-    else:
-        result = "Error in prediction shape"
+        fake_threshold = 0.5
+        result = "Fake Image" if confidence < fake_threshold else "Real Image"
 
-    return result
+        return {"result": result, "confidence": round(confidence * 100, 2)}
+    except Exception as e:
+        print("❌ ERROR in detect_fake_image!")
+        print(traceback.format_exc())
+        return {"error": "Model failed to predict"}
 
-# Flask route for the home page (optional)
+
+# Flask route for the home page
 @app.route('/')
 def home():
     return "Welcome to TruthCheck! Use the /analyze-image endpoint to analyze images."
 
+
 # Flask route for analyzing images (POST request)
 @app.route('/analyze-image', methods=['POST'])
 def analyze_image():
-    # Get the uploaded image file from the POST request
-    print("image received")
-    file = request.files['file']
+    try:
+        print("📂 Image received...")
+        file = request.files['file']
+
+        if not file:
+            print("❌ ERROR: No file received!")
+            return jsonify({"error": "No file uploaded"}), 400
+
+        file_path = "temp_image.jpg"
+        file.save(file_path)
+        print(f"✅ Image saved as {file_path}")
+
+        response = detect_fake_image(file_path)
+
+        print(f"✅ Analysis Complete: {response}")
+
+        return jsonify(response)
     
-    # Save the image temporarily to the local disk
-    file_path = "temp_image.jpg"
-    file.save(file_path)
-    
-    # Call the fake image detection function
-    result = detect_fake_image(file_path)
-    
-    # Return the result as a JSON response
-    return jsonify({"result": result})
+    except Exception as e:
+        print("❌ ERROR in /analyze-image endpoint!")
+        print(traceback.format_exc())
+        return jsonify({"error": "Internal Server Error"}), 500
+
 
 # Run the Flask app
 if __name__ == '__main__':
-    app.run(debug=True)
-
+    print("🚀 Starting Flask server on http://127.0.0.1:5001/")
+    app.run(host="127.0.0.1", debug=True, port=5001)
