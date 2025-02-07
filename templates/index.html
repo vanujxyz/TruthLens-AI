@@ -9,6 +9,8 @@
         #container { background: #112240; padding: 30px; border-radius: 12px; box-shadow: 0px 4px 10px rgba(0, 255, 255, 0.2); width: 50%; margin: auto; }
         input, button { margin: 10px; padding: 10px; border-radius: 5px; }
         button { background: #64ffda; cursor: pointer; }
+        .history { background: #1b2a41; padding: 10px; border-radius: 8px; margin-top: 20px; }
+        .history-item { padding: 10px; background: #112240; border-radius: 5px; margin: 5px 0; }
     </style>
 </head>
 <body>
@@ -24,6 +26,14 @@
         <input type="file" id="imageUpload">
         <button onclick="checkImage()">Analyze Image</button>
         <p id="imageResult"></p>
+
+        <!-- History Section -->
+        <div class="history">
+            <h3>Analysis History</h3>
+            <div id="historyList">
+                <!-- History items will appear here -->
+            </div>
+        </div>
     </div>
 
     <script>
@@ -41,6 +51,7 @@
                 const data = await response.json();
                 if (data.analysis) {
                     document.getElementById("factResult").innerHTML = `<strong>Result:</strong> ${data.analysis}`;
+                    addToHistory("Fact Check", claim, data.analysis);  // Add to history
                 } else {
                     document.getElementById("factResult").innerHTML = `<strong>Error:</strong> Could not retrieve result.`;
                 }
@@ -75,11 +86,44 @@
                     document.getElementById("imageResult").innerHTML = 
                         `<strong>Result:</strong> ${data.result} <br> 
                         <strong>Confidence:</strong> ${data.confidence}%`;
+                    addToHistory("Image Check", data.result, `${data.confidence}%`);  // Add to history
                 }
             } catch (error) {
                 document.getElementById("imageResult").innerHTML = `<strong>Error:</strong> ${error.message}`;
             }
         }
+
+        // Function to add results to the history
+        function addToHistory(type, input, result) {
+            const historyList = document.getElementById("historyList");
+            const historyItem = document.createElement("div");
+            historyItem.classList.add("history-item");
+            historyItem.innerHTML = `<strong>${type}</strong>: ${input} <br><strong>Result</strong>: ${result}`;
+            historyList.prepend(historyItem); // Prepend so the latest item is at the top
+        }
+
+        // Function to fetch history from the server
+        async function fetchHistory() {
+            try {
+                const response = await fetch("http://127.0.0.1:5001/get_image_history");
+                const data = await response.json();
+                const historyList = document.getElementById("historyList");
+                historyList.innerHTML = "";  // Clear existing history
+                data.history.forEach(item => {
+                    const historyItem = document.createElement("div");
+                    historyItem.classList.add("history-item");
+                    historyItem.innerHTML = `<strong>${item.image_filename}</strong>: ${item.result} <br><strong>Confidence</strong>: ${item.confidence}% <br><strong>Timestamp</strong>: ${item.timestamp}`;
+                    historyList.appendChild(historyItem);
+                });
+            } catch (error) {
+                console.error("Error fetching history:", error);
+            }
+        }
+
+        // Call fetchHistory on page load to display previous analysis
+        window.onload = function() {
+            fetchHistory();
+        };
     </script>
 </body>
 </html>

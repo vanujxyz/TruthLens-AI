@@ -9,12 +9,14 @@ from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-
+import datetime
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS for the entire app
+
+# Initialize image analysis history (store in-memory for simplicity)
+image_history = []
 
 try:
     print("🔄 Loading EfficientNetB0 model...")
@@ -31,7 +33,6 @@ try:
 except Exception as e:
     print("❌ ERROR: Model failed to load!")
     print(traceback.format_exc())
-
 
 # Function to preprocess the image before passing to the model
 def preprocess_image(img_path):
@@ -55,7 +56,6 @@ def preprocess_image(img_path):
         print(traceback.format_exc())
         return None
 
-
 # Function to detect if the image is fake or real using the EfficientNetB0 model
 def detect_fake_image(image_path):
     try:
@@ -78,12 +78,15 @@ def detect_fake_image(image_path):
         print(traceback.format_exc())
         return {"error": "Model failed to predict"}
 
+# API endpoint to get image analysis history
+@app.route("/get_image_history", methods=["GET"])
+def get_image_history():
+    return jsonify({"history": image_history})
 
 # Flask route for the home page
 @app.route('/')
 def home():
     return "Welcome to TruthCheck! Use the /analyze-image endpoint to analyze images."
-
 
 # Flask route for analyzing images (POST request)
 @app.route('/analyze-image', methods=['POST'])
@@ -104,13 +107,20 @@ def analyze_image():
 
         print(f"✅ Analysis Complete: {response}")
 
+        # Save the result to history with a timestamp
+        image_history.append({
+            "image_filename": file.filename,
+            "result": response["result"],
+            "confidence": response["confidence"],
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+
         return jsonify(response)
     
     except Exception as e:
         print("❌ ERROR in /analyze-image endpoint!")
         print(traceback.format_exc())
         return jsonify({"error": "Internal Server Error"}), 500
-
 
 # Run the Flask app
 if __name__ == '__main__':
