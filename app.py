@@ -8,9 +8,13 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.keras.models import Model
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+
 
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app)  # Enable CORS for the entire app
 
 try:
     print("🔄 Loading EfficientNetB0 model...")

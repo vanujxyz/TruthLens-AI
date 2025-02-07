@@ -27,36 +27,57 @@
     </div>
 
     <script>
+        // Function to check fact with API
         async function checkFact() {
             const claim = document.getElementById("claim").value;
-            if (!claim) { alert("Enter a fact to check!"); return; }
+            if (!claim) { 
+                alert("Enter a fact to check!"); 
+                return; 
+            }
 
             document.getElementById("factResult").innerHTML = "Checking...";
-            const response = await fetch(`http://127.0.0.1:5000/check_fact?claim=${encodeURIComponent(claim)}`);
-            const data = await response.json();
-            document.getElementById("factResult").innerHTML = `<strong>Result:</strong> ${data.analysis}`;
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/check_fact?claim=${encodeURIComponent(claim)}`);
+                const data = await response.json();
+                if (data.analysis) {
+                    document.getElementById("factResult").innerHTML = `<strong>Result:</strong> ${data.analysis}`;
+                } else {
+                    document.getElementById("factResult").innerHTML = `<strong>Error:</strong> Could not retrieve result.`;
+                }
+            } catch (error) {
+                document.getElementById("factResult").innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
         }
 
+        // Function to check image with API
         async function checkImage() {
             const imageFile = document.getElementById("imageUpload").files[0];
-            if (!imageFile) { alert("Upload an image!"); return; }
+            if (!imageFile) { 
+                alert("Upload an image!"); 
+                return; 
+            }
 
             let formData = new FormData();
             formData.append("file", imageFile);
 
             document.getElementById("imageResult").innerHTML = "Analyzing...";
-            const response = await fetch("http://127.0.0.1:5001/analyze-image", {  
-                method: "POST",
-                body: formData
-            });
+            try {
+                const response = await fetch("http://127.0.0.1:5001/analyze-image", {  
+                    method: "POST",
+                    body: formData
+                });
 
-            const data = await response.json();
-            if (data.error) {
-                document.getElementById("imageResult").innerHTML = `<strong>Error:</strong> ${data.error}`;
-            } else {
-                document.getElementById("imageResult").innerHTML = 
-                    `<strong>Result:</strong> ${data.result} <br> 
-                    <strong>Confidence:</strong> ${data.confidence}%`;
+                const data = await response.json();
+                console.log(data);  // Log the response for debugging
+                if (data.error) {
+                    document.getElementById("imageResult").innerHTML = `<strong>Error:</strong> ${data.error}`;
+                } else {
+                    document.getElementById("imageResult").innerHTML = 
+                        `<strong>Result:</strong> ${data.result} <br> 
+                        <strong>Confidence:</strong> ${data.confidence}%`;
+                }
+            } catch (error) {
+                document.getElementById("imageResult").innerHTML = `<strong>Error:</strong> ${error.message}`;
             }
         }
     </script>

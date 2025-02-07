@@ -2,12 +2,17 @@ import os
 import requests
 from flask import Flask, request, jsonify, render_template
 from dotenv import load_dotenv
+from flask_cors import CORS
+
+# Enable CORS for all routes
+
 
 # Load environment variables
 load_dotenv()
 
 # Flask App
 app = Flask(__name__, template_folder="templates")
+CORS(app, origins="http://127.0.0.1:5000")  # Allow only main.py to access the API
 
 # Hugging Face API URL & Token
 HF_API_URL = "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct"
