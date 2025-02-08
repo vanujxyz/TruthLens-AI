@@ -5,15 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Fact & Image Checker</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+    </style>
 </head>
 <body class="bg-gray-900 text-white font-sans text-center">
 
     <h2 class="text-4xl font-bold mt-10 text-teal-400 animate-fadeIn">🔍 AI Fact & Image Checker</h2>
 
     <div id="container" class="flex flex-col md:flex-row justify-center items-start mt-10 space-y-6 md:space-y-0 md:space-x-10 px-5">
-
+        
         <!-- Fact Checking Section -->
-        <div class="bg-gray-800 bg-opacity-80 backdrop-blur-md shadow-lg p-6 rounded-lg w-full md:w-1/3">
+        <div class="bg-gray-800 bg-opacity-80 backdrop-blur-md shadow-lg p-6 rounded-xl w-full md:w-1/3 transition transform hover:scale-105">
             <h3 class="text-xl font-semibold text-teal-300">📜 Fact Checking</h3>
             <input type="text" id="claim" placeholder="Enter a fact to verify..." 
                 class="w-full mt-3 p-3 bg-gray-700 text-white border border-teal-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400">
@@ -24,22 +31,23 @@
         </div>
 
         <!-- Image Checking Section -->
-        <div class="bg-gray-800 bg-opacity-80 backdrop-blur-md shadow-lg p-6 rounded-lg w-full md:w-1/3">
+        <div class="bg-gray-800 bg-opacity-80 backdrop-blur-md shadow-lg p-6 rounded-xl w-full md:w-1/3 transition transform hover:scale-105">
             <h3 class="text-xl font-semibold text-teal-300">🖼️ Image Fake Detection</h3>
 
-            <!-- Custom File Input -->
-            <label class="block mt-3 cursor-pointer">
-                <span class="block bg-teal-400 text-gray-900 text-sm font-bold py-2 px-4 rounded-lg transition transform hover:scale-105 inline-block">
-                    📂 Choose File
-                </span>
+            <!-- Drag & Drop File Upload -->
+            <div class="border-dashed border-2 border-teal-300 p-6 mt-3 rounded-lg cursor-pointer hover:bg-gray-700" onclick="document.getElementById('imageUpload').click()">
+                <p class="text-teal-400">📂 Drag & Drop or Click to Upload</p>
                 <input type="file" id="imageUpload" onchange="previewImage()" class="hidden">
-            </label>
+            </div>
 
-            <img id="imagePreview" class="mt-3 w-full rounded-lg hidden" />
+            <img id="imagePreview" class="mt-3 w-full rounded-lg hidden shadow-md" />
             <button onclick="checkImage()" class="w-full mt-3 bg-teal-400 text-gray-900 font-bold py-2 rounded-lg transition transform hover:scale-105">
                 Analyze Image
             </button>
             <p id="imageResult" class="mt-4 text-lg"></p>
+            <div id="confidenceBarContainer" class="hidden mt-3 w-full bg-gray-700 rounded-full h-4">
+                <div id="confidenceBar" class="bg-teal-400 h-4 rounded-full text-xs text-center text-gray-900 font-bold"></div>
+            </div>
         </div>
     </div>
 
@@ -63,6 +71,7 @@
 
         function displayHistory() {
             let historyList = document.getElementById("historyList");
+            if (!historyList) return;
             historyList.innerHTML = "";
             let history = JSON.parse(localStorage.getItem("history")) || [];
 
@@ -116,6 +125,13 @@
             const data = await response.json();
 
             document.getElementById("imageResult").innerHTML = `<strong>Result:</strong> ${data.result} <br> Confidence: ${data.confidence}%`;
+            
+            let confidenceBar = document.getElementById("confidenceBar");
+            let confidenceBarContainer = document.getElementById("confidenceBarContainer");
+            confidenceBar.style.width = `${data.confidence}%`;
+            confidenceBar.innerText = `${data.confidence}%`;
+            confidenceBarContainer.classList.remove("hidden");
+
             updateHistory({ type: "Image", result: data.result, confidence: data.confidence });
         }
 
