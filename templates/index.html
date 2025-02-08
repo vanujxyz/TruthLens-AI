@@ -11,51 +11,90 @@
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+
+        /* Modern Color Theme */
+        body {
+            background-color: #121212; /* Deep Charcoal Gray */
+            color: #E4E1DB; /* Soft Off-White */
+        }
+        .container-box {
+            background: #1E1E1E; /* Dark Gray */
+            border: 1px solid #3A3A3A;
+            transition: transform 0.3s ease;
+        }
+        .container-box:hover {
+            transform: scale(1.02);
+        }
+        .primary-button {
+            background-color: #FFB300; /* Amber */
+            color: #121212;
+            transition: transform 0.2s ease;
+        }
+        .primary-button:hover {
+            transform: scale(1.05);
+            background-color: #FFA000;
+        }
+        .confidence-bar-container {
+            width: 100%;
+            background: #3A3A3A;
+            height: 6px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .confidence-bar {
+            height: 6px;
+            background: #FFB300;
+            width: 0%;
+            transition: width 0.5s ease-in-out;
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white font-sans text-center">
+<body class="font-sans text-center">
 
-    <h2 class="text-4xl font-bold mt-10 text-teal-400 animate-fadeIn">🔍 AI Fact & Image Checker</h2>
+    <h2 class="text-4xl font-bold mt-10 text-amber-500 animate-fadeIn">🔍 AI Fact & Image Checker</h2>
 
     <div id="container" class="flex flex-col md:flex-row justify-center items-start mt-10 space-y-6 md:space-y-0 md:space-x-10 px-5">
         
         <!-- Fact Checking Section -->
-        <div class="bg-gray-800 bg-opacity-80 backdrop-blur-md shadow-lg p-6 rounded-xl w-full md:w-1/3 transition transform hover:scale-105">
-            <h3 class="text-xl font-semibold text-teal-300">📜 Fact Checking</h3>
+        <div class="container-box shadow-lg p-6 rounded-xl w-full md:w-1/3">
+            <h3 class="text-xl font-semibold text-amber-400">📜 Fact Checking</h3>
             <input type="text" id="claim" placeholder="Enter a fact to verify..." 
-                class="w-full mt-3 p-3 bg-gray-700 text-white border border-teal-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400">
-            <button onclick="checkFact()" class="w-full mt-3 bg-teal-400 text-gray-900 font-bold py-2 rounded-lg transition transform hover:scale-105">
+                class="w-full mt-3 p-3 bg-gray-800 text-white border border-amber-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <button onclick="checkFact()" class="w-full mt-3 primary-button font-bold py-2 rounded-lg">
                 Check Fact
             </button>
             <p id="factResult" class="mt-4 text-lg"></p>
         </div>
 
         <!-- Image Checking Section -->
-        <div class="bg-gray-800 bg-opacity-80 backdrop-blur-md shadow-lg p-6 rounded-xl w-full md:w-1/3 transition transform hover:scale-105">
-            <h3 class="text-xl font-semibold text-teal-300">🖼️ Image Fake Detection</h3>
+        <div class="container-box shadow-lg p-6 rounded-xl w-full md:w-1/3">
+            <h3 class="text-xl font-semibold text-amber-400">🖼️ Image Fake Detection</h3>
 
             <!-- Drag & Drop File Upload -->
-            <div class="border-dashed border-2 border-teal-300 p-6 mt-3 rounded-lg cursor-pointer hover:bg-gray-700" onclick="document.getElementById('imageUpload').click()">
-                <p class="text-teal-400">📂 Drag & Drop or Click to Upload</p>
+            <div class="border-dashed border-2 border-amber-400 p-6 mt-3 rounded-lg cursor-pointer hover:bg-gray-800" onclick="document.getElementById('imageUpload').click()">
+                <p class="text-amber-300">📂 Drag & Drop or Click to Upload</p>
                 <input type="file" id="imageUpload" onchange="previewImage()" class="hidden">
             </div>
 
             <img id="imagePreview" class="mt-3 w-full rounded-lg hidden shadow-md" />
-            <button onclick="checkImage()" class="w-full mt-3 bg-teal-400 text-gray-900 font-bold py-2 rounded-lg transition transform hover:scale-105">
+            <button onclick="checkImage()" class="w-full mt-3 primary-button font-bold py-2 rounded-lg">
                 Analyze Image
             </button>
             <p id="imageResult" class="mt-4 text-lg"></p>
-            <div id="confidenceBarContainer" class="hidden mt-3 w-full bg-gray-700 rounded-full h-4">
-                <div id="confidenceBar" class="bg-teal-400 h-4 rounded-full text-xs text-center text-gray-900 font-bold"></div>
+            
+            <!-- Confidence Bar -->
+            <div id="confidenceBarContainer" class="confidence-bar-container hidden">
+                <div id="confidenceBar" class="confidence-bar"></div>
             </div>
         </div>
     </div>
 
     <!-- History Section -->
-    <div class="bg-gray-800 bg-opacity-80 backdrop-blur-md shadow-lg p-6 rounded-lg w-11/12 md:w-2/3 mx-auto mt-10">
-        <h3 class="text-xl font-semibold text-teal-300">📂 Analysis History</h3>
+    <div class="container-box shadow-lg p-6 rounded-lg w-11/12 md:w-2/3 mx-auto mt-10">
+        <h3 class="text-xl font-semibold text-amber-400">📂 Analysis History</h3>
         <div id="historyList" class="mt-3 space-y-2"></div>
-        <button class="mt-3 bg-red-500 text-white font-bold py-2 px-4 rounded-lg transition transform hover:scale-105"
+        <button class="mt-3 bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:scale-105"
             onclick="clearHistory()">
             Clear History
         </button>
@@ -77,7 +116,7 @@
 
             history.forEach(item => {
                 let div = document.createElement("div");
-                div.classList.add("bg-gray-700", "p-3", "rounded-lg", "text-white", "shadow-md", "animate-fadeIn");
+                div.classList.add("bg-gray-800", "p-3", "rounded-lg", "text-white", "shadow-md", "animate-fadeIn");
                 div.innerHTML = `<strong>${item.type}:</strong> ${item.result} (Confidence: ${item.confidence}%)`;
                 historyList.appendChild(div);
             });
@@ -129,7 +168,6 @@
             let confidenceBar = document.getElementById("confidenceBar");
             let confidenceBarContainer = document.getElementById("confidenceBarContainer");
             confidenceBar.style.width = `${data.confidence}%`;
-            confidenceBar.innerText = `${data.confidence}%`;
             confidenceBarContainer.classList.remove("hidden");
 
             updateHistory({ type: "Image", result: data.result, confidence: data.confidence });
